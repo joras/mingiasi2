@@ -1,12 +1,13 @@
 import { NextFunction, Request, Response } from "express";
 import config from "../config.json";
+import { getAuthHeader } from "./util";
 
 export function isAuthenticated(
   req: Request,
   res: Response,
   next: NextFunction,
 ) {
-  const authHeader = req.headers.authorization || "";
+  const authHeader = getAuthHeader(req) || "";
   const userIsAuthenticated = authHeader === `Bearer ${config.token}`;
 
   if (userIsAuthenticated) {
