@@ -1,15 +1,28 @@
 import { Redis } from "ioredis";
 import { RateLimitFn, RateWindowSize } from "../rateLimiter";
 import { INCREMENT_RATE_KEY_LUA_FN } from "./luaScripts";
+import { config } from "../../../config";
 
-let redis: Redis | undefined = undefined;
+type ExtendedRedis = Redis & {
+  incrementRateLimiter(key: string, ttl: number): Promise<unknown>;
+};
+
+let redis: ExtendedRedis | undefined = undefined;
 
 function getRedisClient() {
   if (redis !== undefined) {
     return redis;
   }
 
-  redis = new Redis();
+  redis = new Redis(
+    config.REDIS_URL,
+  ) as ExtendedRedis;
+
+  redis.defineCommand("incrementRateLimiter", {
+    lua: INCREMENT_RATE_KEY_LUA_FN,
+    numberOfKeys: 1,
+  });
+
   return redis;
 }
 
@@ -26,16 +39,11 @@ export const redisRateLimiter: RateLimitFn = async (
   const fullKey = `rate_limit:${rateWindow}:${key}`;
 
   const result = handleScriptResult(
-    await redisClient.eval(
-      INCREMENT_RATE_KEY_LUA_FN,
-      1,
-      fullKey,
-      ttl,
-    ),
+    await redisClient.incrementRateLimiter(fullKey, ttl),
   );
 
   if (result == undefined) {
-    throw "unexpected"; //TODO
+    throw new Error("cannot call redis");
   }
 
   return {

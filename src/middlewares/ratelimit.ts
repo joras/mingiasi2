@@ -1,6 +1,5 @@
 import { NextFunction, Request, Response } from "express";
 import { getAuthHeader, getRequestIp } from "./util";
-//import { RateWindowSize } from "./ratelimiter/rateLimiter";
 import { redisRateLimiter } from "./ratelimiter/redis/redisRateLimiter";
 import { RateWindowSize } from "./ratelimiter/rateLimiter";
 
@@ -12,15 +11,11 @@ export function createRateLimiter(
   rate: number,
   rateWindow: RateWindowSize = "hour",
 ) {
-  return async (
-    req: Request,
-    res: Response,
-    next: NextFunction,
-  ) => {
+  return async (req: Request, res: Response, next: NextFunction) => {
     const key = keyFn(req);
 
     if (key == undefined) {
-      return res.status(500); // TODO error handling
+      throw new Error("unexpected error");
     }
 
     const result = await redisRateLimiter(key, rate, rateWindow);
@@ -28,15 +23,15 @@ export function createRateLimiter(
     if (!result.limited) {
       return next();
     } else {
-      return res.status(429).header(
-        "Retry-After",
-        result.remainingTimeInSecs.toString(),
-      ).json({
-        message:
-          `Too Many Request. Try again in ${result.remainingTimeInSecs} seconds`,
-        limit: rate,
-        limitWindow: rateWindow,
-      });
+      return res
+        .status(429)
+        .header("Retry-After", result.remainingTimeInSecs.toString())
+        .json({
+          message:
+            `Too Many Request. Try again in ${result.remainingTimeInSecs} seconds`,
+          limit: rate,
+          limitWindow: rateWindow,
+        });
     }
   };
 }

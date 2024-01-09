@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from "express";
-import config from "../config.json";
 import { getAuthHeader } from "./util";
+import { config } from "../config";
 
 export function isAuthenticated(
   req: Request,
@@ -8,7 +8,7 @@ export function isAuthenticated(
   next: NextFunction,
 ) {
   const authHeader = getAuthHeader(req) || "";
-  const userIsAuthenticated = authHeader === `Bearer ${config.token}`;
+  const userIsAuthenticated = authHeader === `Bearer ${config.SECRET_TOKEN}`;
 
   if (userIsAuthenticated) {
     return next();

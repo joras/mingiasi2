@@ -1,4 +1,4 @@
-import { NextFunction, Request, Response } from "express";
+import { Request } from "express";
 
 export function getAuthHeader(req: Request) {
   return req.headers.authorization;
