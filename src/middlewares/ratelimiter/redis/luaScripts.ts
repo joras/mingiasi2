@@ -7,8 +7,8 @@ export const INCREMENT_RATE_KEY_LUA_FN = `
     local requests = redis.call('incr', KEYS[1])
 
     -- Get the remaining time-to-live (TTL) for the key in milliseconds
-    local ttl = redis.call('pttl', KEYS[1])
+    local ttl_ms = redis.call('pttl', KEYS[1])
 
     -- Return the current count and the TTL
-    return {requests, ttl}
+    return {requests, ttl_ms}
 `;

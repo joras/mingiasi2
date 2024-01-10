@@ -2,7 +2,7 @@ import express from "express";
 import { config } from "../config";
 import { isAuthenticated } from "../middlewares/isAuthenticated";
 import { createSecretTokenRateLimiter } from "../middlewares/ratelimit";
-import { RateWindowSize } from "../middlewares/ratelimiter/rateLimiter";
+import { RateWindowSize } from "../middlewares/ratelimiter/types";
 
 export const privateRoutes = express.Router();
 privateRoutes.use(isAuthenticated);

@@ -8,18 +8,21 @@ import { privateRoutes } from "./routes/private";
 
 const app = express();
 app.set("trust proxy", true);
+
+// attach routes
 app.use("/", publicRoutes);
 app.use("/private", privateRoutes);
 
 // start server
 const port = config.PORT;
 app.listen(port, () => {
-  return console.log(`Express started at port ${port}, with following config 
-
-${renderConfig()}`);
+  return console.log(renderServerMessage(port));
 });
 
-function renderConfig() {
-  return Object.entries(config).map(([key, value]) => `\t${key}: \t${value}`)
+function renderServerMessage(port: number) {
+  const configText = Object.entries(config)
+    .map(([key, value]) => `\t${key}: \t${value}`)
     .join("\n");
+
+  return `Express started at port ${port}, with following config \n ${configText}`;
 }

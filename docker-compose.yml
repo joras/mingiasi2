@@ -7,14 +7,14 @@ services:
     build: .
     environment:
       - REDIS_URL=redis://redis
-    depends_on: 
+    depends_on:
       - redis
 
   app2:
     build: .
     environment:
       - REDIS_URL=redis://redis
-    depends_on: 
+    depends_on:
       - redis
 
   nginx:

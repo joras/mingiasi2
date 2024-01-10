@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import { getAuthHeader, getRequestIp } from "./util";
 import { redisRateLimiter } from "./ratelimiter/redis/redisRateLimiter";
-import { RateWindowSize } from "./ratelimiter/rateLimiter";
+import { RateLimitFn, RateWindowSize } from "./ratelimiter/types";
 
 type RateLimitKeyFn = (req: Request) => string | undefined;
 
@@ -10,6 +10,7 @@ export function createRateLimiter(
   keyFn: RateLimitKeyFn,
   rate: number,
   rateWindow: RateWindowSize = "hour",
+  rateLimiter: RateLimitFn = redisRateLimiter,
 ) {
   return async (req: Request, res: Response, next: NextFunction) => {
     const key = keyFn(req);
@@ -18,7 +19,7 @@ export function createRateLimiter(
       throw new Error("unexpected error");
     }
 
-    const result = await redisRateLimiter(key, rate, rateWindow);
+    const result = await rateLimiter(key, rate, rateWindow);
 
     if (!result.limited) {
       return next();
@@ -27,8 +28,7 @@ export function createRateLimiter(
         .status(429)
         .header("Retry-After", result.remainingTimeInSecs.toString())
         .json({
-          message:
-            `Too Many Request. Try again in ${result.remainingTimeInSecs} seconds`,
+          message: `Too Many Request. Try again in ${result.remainingTimeInSecs} seconds`,
           limit: rate,
           limitWindow: rateWindow,
         });

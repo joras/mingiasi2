@@ -1,14 +1,11 @@
 import express from "express";
 import { config } from "../config";
 import { createIPRateLimiter } from "../middlewares/ratelimit";
-import { RateWindowSize } from "../middlewares/ratelimiter/rateLimiter";
+import { RateWindowSize } from "../middlewares/ratelimiter/types";
 
 export const publicRoutes = express.Router();
 publicRoutes.use(
-  createIPRateLimiter(
-    config.RATE_PUBLIC,
-    config.RATE_WINDOW as RateWindowSize,
-  ),
+  createIPRateLimiter(config.RATE_PUBLIC, config.RATE_WINDOW as RateWindowSize),
 );
 
 publicRoutes.get("/hello", (_req, res) => {

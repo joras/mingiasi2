@@ -1,4 +1,3 @@
 todo:
-- tests
-- readme
 
+- tests

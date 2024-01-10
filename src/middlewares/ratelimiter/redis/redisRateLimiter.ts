@@ -1,10 +1,10 @@
 import { Redis } from "ioredis";
-import { RateLimitFn, RateWindowSize } from "../rateLimiter";
+import { RateLimitFn, RateWindowSize } from "../types";
 import { INCREMENT_RATE_KEY_LUA_FN } from "./luaScripts";
 import { config } from "../../../config";
 
 type ExtendedRedis = Redis & {
-  incrementRateLimiter(key: string, ttl: number): Promise<unknown>;
+  incrementRateLimitKey(key: string, ttl: number): Promise<unknown>;
 };
 
 let redis: ExtendedRedis | undefined = undefined;
@@ -14,9 +14,7 @@ function getRedisClient() {
     return redis;
   }
 
-  redis = new Redis(
-    config.REDIS_URL,
-  ) as ExtendedRedis;
+  redis = new Redis(config.REDIS_URL) as ExtendedRedis;
 
   redis.defineCommand("incrementRateLimiter", {
     lua: INCREMENT_RATE_KEY_LUA_FN,
@@ -32,14 +30,14 @@ function getRedisClient() {
 export const redisRateLimiter: RateLimitFn = async (
   key: string,
   rate: number,
-  rateWindow: "second" | "minute" | "hour",
+  rateWindow: RateWindowSize,
 ) => {
-  const redisClient = getRedisClient(); // TODO handle errors
+  const redisClient = getRedisClient();
   const ttl = getUnitInSeconds(rateWindow);
   const fullKey = `rate_limit:${rateWindow}:${key}`;
 
   const result = handleScriptResult(
-    await redisClient.incrementRateLimiter(fullKey, ttl),
+    await redisClient.incrementRateLimitKey(fullKey, ttl),
   );
 
   if (result == undefined) {
@@ -49,7 +47,7 @@ export const redisRateLimiter: RateLimitFn = async (
   return {
     limited: result?.requests > rate,
     remainingRequests: rate - result?.requests,
-    remainingTimeInSecs: ttl,
+    remainingTimeInSecs: result.ttlSec,
   };
 };
 
@@ -60,7 +58,10 @@ function handleScriptResult(luaIncrFnResult: unknown) {
     typeof luaIncrFnResult[0] === "number" &&
     typeof luaIncrFnResult[1] === "number"
   ) {
-    return { requests: luaIncrFnResult[0], ttl: luaIncrFnResult[1] };
+    return {
+      requests: luaIncrFnResult[0],
+      ttlSec: Math.ceil(luaIncrFnResult[1] / 1000),
+    };
   }
 }
 
