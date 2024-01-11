@@ -16,7 +16,7 @@ function getRedisClient() {
 
   redis = new Redis(config.REDIS_URL) as ExtendedRedis;
 
-  redis.defineCommand("incrementRateLimiter", {
+  redis.defineCommand("incrementRateLimitKey", {
     lua: INCREMENT_RATE_KEY_LUA_FN,
     numberOfKeys: 1,
   });
